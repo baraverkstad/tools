@@ -33,12 +33,13 @@ Optionally create a git alias in `~/.gitconfig`:
     up = uptodate
 ```
 
+
 ## frontmatter
 
 Prints the YAML front-matter block from one or more files.
 
 ```bash
-frontmatter <file>...
+frontmatter <file|dir>...
 ```
 
 Install into `~/.local/bin`:
