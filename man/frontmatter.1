@@ -1,0 +1,40 @@
+.TH frontmatter 1 "May 2026" "frontmatter"
+.SH NAME
+frontmatter \- print YAML front-matter from files
+.SH SYNOPSIS
+.B frontmatter
+.RI [ options ]
+.RI < file|dir ...>
+.SH DESCRIPTION
+.B frontmatter
+reads one or more files and prints the YAML front-matter block
+\(em the content between the opening and closing
+.B \-\-\-
+delimiters at the start of the file. When a directory is given it is
+searched recursively for files whose first line is
+.BR \-\-\- .
+.SH OPTIONS
+.TP
+.B -h, --help
+Show usage information and exit.
+.TP
+.I file
+Print the front-matter block from the given file, or warn if none
+is found.
+.TP
+.I directory
+Search recursively for files with front-matter blocks. Each match
+is printed with a
+.B ==> file ==>
+header.
+.SH EXIT STATUS
+Returns zero when front-matter is found. Returns non-zero when no
+front-matter exists in the input, or when an error occurs.
+.SH EXAMPLES
+.TP
+.B frontmatter post.md
+Print front-matter from a single file.
+.TP
+.B frontmatter src/
+Recursively print front-matter from all files under
+.IR src/ .
