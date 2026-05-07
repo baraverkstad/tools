@@ -15,12 +15,15 @@
 
 PROGRAM=$0
 BASEDIR=$(realpath . 2>/dev/null)
-COLOR_ERR=$(tput setaf 1; tput bold 2>/dev/null || echo '')
-COLOR_WARN=$(tput setaf 3 2>/dev/null || echo '')
-COLOR_OK=$(tput setaf 2; tput bold 2>/dev/null || echo '')
-COLOR_GREY=$(tput setaf 7 2>/dev/null || echo '')
-COLOR_OFF=$(tput sgr0 2>/dev/null || echo '')
+[[ -t 1 && -t 2 ]] && COLOR=true || COLOR=false
 PULL=false
+
+# Color variables (updated by auto-detect later)
+COLOR_ERR=""
+COLOR_WARN=""
+COLOR_OK=""
+COLOR_GREY=""
+COLOR_OFF=""
 
 # Print error message
 error() {
@@ -40,6 +43,16 @@ usage() {
     done < <(tail -n +3 "${PROGRAM}")
     [[ $# -gt 0 ]] && error "$@"
     exit 1
+}
+
+# Initialize colors (if enabled)
+init-colors() {
+    export TERM=xterm-256color
+    COLOR_ERR=$(tput setaf 1; tput bold 2>/dev/null || echo '')
+    COLOR_WARN=$(tput setaf 3 2>/dev/null || echo '')
+    COLOR_OK=$(tput setaf 2; tput bold 2>/dev/null || echo '')
+    COLOR_GREY=$(tput setaf 7 2>/dev/null || echo '')
+    COLOR_OFF=$(tput sgr0 2>/dev/null || echo '')
 }
 
 # Remove BASEDIR prefix from PWD for display
@@ -132,6 +145,7 @@ print-repo() {
 }
 
 # Main processing
+${COLOR} && init-colors || true
 while [[ $# -gt 0 ]] ; do
     case "$1" in
         -h|--help) usage ;;

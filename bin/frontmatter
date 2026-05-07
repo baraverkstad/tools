@@ -9,9 +9,12 @@
 #   <file|dir>...  - The files or directories to process
 
 PROGRAM=$0
-COLOR_ERR=$(tput setaf 1; tput bold 2>/dev/null || echo '')
-COLOR_WARN=$(tput setaf 3 2>/dev/null || echo '')
-COLOR_OFF=$(tput sgr0 2>/dev/null || echo '')
+[[ -t 1 && -t 2 ]] && COLOR=true || COLOR=false
+
+# Color variables (updated by auto-detect later)
+COLOR_ERR=""
+COLOR_WARN=""
+COLOR_OFF=""
 
 # Exit with error message
 die() {
@@ -33,6 +36,14 @@ usage() {
     exit 1
 }
 
+# Initialize colors (if enabled)
+init-colors() {
+    export TERM=xterm-256color
+    COLOR_ERR=$(tput setaf 1; tput bold 2>/dev/null || echo '')
+    COLOR_WARN=$(tput setaf 3 2>/dev/null || echo '')
+    COLOR_OFF=$(tput sgr0 2>/dev/null || echo '')
+}
+
 # Extract and print front-matter, return non-zero if not found
 print-frontmatter() {
     [[ -r "$1" ]] || die "cannot read file: $1"
@@ -47,6 +58,7 @@ find-files() {
 }
 
 # Main processing
+${COLOR} && init-colors || true
 if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]] ; then
     usage
 elif [[ $# -eq 1 && -f "$1" ]] ; then
