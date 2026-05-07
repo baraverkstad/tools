@@ -1,6 +1,6 @@
-# Project Incubator
+# Tools & Utilities
 
-A project for experiments, tools and research.
+A small collection of command-line tools and utilities.
 
 
 ## git-uptodate
@@ -16,7 +16,7 @@ Install into `~/.local`:
 ```bash
 DIR=~/.local/bin
 MAN=~/.local/share/man/man1
-URL=https://raw.githubusercontent.com/cederberg/incubator/main
+URL=https://raw.githubusercontent.com/baraverkstad/tools/main
 mkdir -p $DIR $MAN
 curl -o $DIR/git-uptodate $URL/bin/git-uptodate
 curl -o $MAN/git-uptodate.1 $URL/man/git-uptodate.1
@@ -50,7 +50,7 @@ Install into `~/.local/bin`:
 
 ```bash
 DIR=~/.local/bin
-URL=https://raw.githubusercontent.com/cederberg/incubator/main
+URL=https://raw.githubusercontent.com/baraverkstad/tools/main
 mkdir -p $DIR
 curl -o $DIR/frontmatter $URL/bin/frontmatter
 chmod +x $DIR/frontmatter
