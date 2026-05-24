@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Prints branch, stash, and working tree status for one or more repositories.
+# Prints branch, stash, worktree count, and file-change status for one or more repositories.
 #
 # Syntax: git-uptodate [<options>] [<dir>...]
 #
@@ -114,7 +114,7 @@ print-stash() {
 
 # Print repository status
 print-repo() {
-    local LINE STAGED MODIFIED UNTRACKED CURRENT ACTIVE
+    local LINE STAGED MODIFIED UNTRACKED WORKTREES CURRENT ACTIVE
     LINE="──── $(repo-name) ──────────────────────────────────────────────────────"
     echo "${LINE:0:60}"
     git remote update --prune >/dev/null 2>&1
@@ -122,6 +122,8 @@ print-repo() {
     STAGED=$(git diff --cached --name-only 2>/dev/null | wc -l | tr -d ' ')
     MODIFIED=$(git ls-files --modified 2>/dev/null | wc -l | tr -d ' ')
     UNTRACKED=$(git ls-files --others --exclude-standard 2>/dev/null | wc -l | tr -d ' ')
+    WORKTREES=$(git worktree list --porcelain 2>/dev/null | grep -c '^worktree ')
+    WORKTREES=$((WORKTREES > 0 ? WORKTREES - 1 : 0))
     local PARTS=()
     [[ "${STAGED}" -gt 0 ]] && PARTS+=("${STAGED} staged")
     [[ "${MODIFIED}" -gt 0 ]] && PARTS+=("${MODIFIED} modified")
@@ -130,6 +132,7 @@ print-repo() {
         local JOINED=$(printf ", %s" "${PARTS[@]}")
         echo "${COLOR_ERR}[!]${COLOR_OFF} ${JOINED:2} file(s)"
     fi
+    [[ "${WORKTREES}" -gt 0 ]] && echo "${COLOR_GREY}[i]${COLOR_OFF} ${WORKTREES} worktree(s)"
     CURRENT=$(git branch --show-current)
     if [[ -z "$CURRENT" ]] ; then
         print-detached

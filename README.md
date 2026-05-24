@@ -5,7 +5,7 @@ A small collection of command-line tools and utilities.
 
 ## git-uptodate
 
-Prints branch, stash, and working tree status for one or more repositories.
+Prints branch, stash, worktree count, and file-change status for one or more repositories.
 
 ```bash
 git uptodate [<dir>...]
