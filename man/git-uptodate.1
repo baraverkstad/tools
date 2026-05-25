@@ -8,7 +8,8 @@ git-uptodate \- print branch, stash, and working tree status for one or more rep
 .SH DESCRIPTION
 .B git-uptodate
 prints local repository status including tracked and untracked changes,
-stashes, and branch divergence for for one or more repositories. Remotes
+stashes, branch divergence, and linked worktrees for local-only branches
+or detached checkouts for one or more repositories. Remotes
 are always refreshed via
 .B git remote update --prune
 so ahead/behind counts are accurate. When no directories are supplied the

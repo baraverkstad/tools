@@ -17,6 +17,7 @@ Example output:
 ──── tools ─────────────────────────────────────────────────
 <span style="color:red;font-weight:bold">[!]</span> 2 staged, 1 modified file(s)
 <span style="color:green;font-weight:bold">• main</span>                <span style="color:gray">--> origin/main                            [0 ahead, 0 behind]</span>
+<span style="color:gray">• c9fa1977f2b0         @ /tmp/tools-detached</span>
 </pre>
 
 ### Install via Homebrew

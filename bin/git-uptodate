@@ -62,20 +62,65 @@ repo-name() {
     echo -n "${REPO}"
 }
 
+# List linked worktrees as type, ref and display location records
+list-worktrees() {
+    local HERE=$1
+    git worktree list --porcelain 2>/dev/null | awk -v here="${HERE}" '
+        function flush() {
+            if (worktree != "" && worktree != here) {
+                location = prunable ? "[worktree removed]" : worktree
+                if (branch != "") {
+                    sub(/^refs\/heads\//, "", branch)
+                    printf "branch\t%s\t%s\n", branch, location
+                } else if (detached) {
+                    printf "detached\t%s\t%s\n", head, location
+                }
+            }
+            worktree = head = branch = ""
+            detached = prunable = 0
+        }
+        /^worktree / { flush(); worktree = substr($0, 10); next }
+        /^HEAD / { head = substr($0, 6); next }
+        /^branch / { branch = substr($0, 8); next }
+        /^detached$/ { detached = 1; next }
+        /^prunable / { prunable = 1; next }
+        /^$/ { flush(); next }
+        END { flush() }
+    '
+}
+
 # Print branch info with ahead/behind counts
 print-branch() {
-    local BRANCH=$1 UPSTREAM=$2 ACTIVE=$3 AHEAD BEHIND
-    AHEAD=$(git rev-list --count "${UPSTREAM}..${BRANCH}")
-    BEHIND=$(git rev-list --count "${BRANCH}..${UPSTREAM}")
-    printf '%s• %-20.20s%s%s --> %-38.38s %s[%s ahead, %s behind]%s\n' \
-        $([[ "${ACTIVE}" == 1 ]] && echo -n "${COLOR_OK}" || echo -n "${COLOR_OFF}") \
+    local BRANCH=$1 UPSTREAM=$2 ACTIVE=$3 WORKTREE=$4 AHEAD BEHIND
+    printf '%s• %-20.20s%s' \
+        "$([[ "${ACTIVE}" == 1 ]] && echo -n "${COLOR_OK}" || echo -n "${COLOR_OFF}")" \
         "${BRANCH}" \
+        "${COLOR_OFF}"
+    if [[ -n "${UPSTREAM}" ]] ; then
+        AHEAD=$(git rev-list --count "${UPSTREAM}..${BRANCH}")
+        BEHIND=$(git rev-list --count "${BRANCH}..${UPSTREAM}")
+        printf '%s --> %-38.38s %s[%s ahead, %s behind]%s' \
+            "${COLOR_GREY}" \
+            "${UPSTREAM}" \
+            "$([[ $((AHEAD + BEHIND)) -gt 0 ]] && echo -n "${COLOR_ERR}" || echo -n "${COLOR_GREY}")" \
+            "${AHEAD}" \
+            "${BEHIND}" \
+            "${COLOR_OFF}"
+    elif [[ -n "${WORKTREE}" ]] ; then
+        printf '%s @ %-55.55s%s' "${COLOR_GREY}" "${WORKTREE}" "${COLOR_OFF}"
+    fi
+    printf '\n'
+}
+
+# Print detached HEAD info for a linked worktree
+print-worktree-detached() {
+    local HEAD=$1 WORKTREE=$2
+    printf '%s• %-20.20s%s%s @ %-55.55s%s\n' \
+        "${COLOR_GREY}" \
+        "${HEAD:0:12}" \
         "${COLOR_OFF}" \
         "${COLOR_GREY}" \
-        "${UPSTREAM}" \
-        $([[ $((AHEAD + BEHIND)) -gt 0 ]] && echo -n "${COLOR_ERR}" || echo -n "${COLOR_GREY}") \
-        "${AHEAD}" \
-        "${BEHIND}" \
+        "${WORKTREE}" \
         "${COLOR_OFF}"
 }
 
@@ -114,7 +159,7 @@ print-stash() {
 
 # Print repository status
 print-repo() {
-    local LINE STAGED MODIFIED UNTRACKED CURRENT ACTIVE
+    local LINE STAGED MODIFIED UNTRACKED CURRENT HERE WORKTREES ACTIVE TYPE HEAD WORKTREE
     LINE="──── $(repo-name) ──────────────────────────────────────────────────────"
     echo "${LINE:0:60}"
     git remote update --prune >/dev/null 2>&1
@@ -122,6 +167,8 @@ print-repo() {
     STAGED=$(git diff --cached --name-only 2>/dev/null | wc -l | tr -d ' ')
     MODIFIED=$(git ls-files --modified 2>/dev/null | wc -l | tr -d ' ')
     UNTRACKED=$(git ls-files --others --exclude-standard 2>/dev/null | wc -l | tr -d ' ')
+    HERE=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
+    WORKTREES=$(list-worktrees "${HERE}")
     local PARTS=()
     [[ "${STAGED}" -gt 0 ]] && PARTS+=("${STAGED} staged")
     [[ "${MODIFIED}" -gt 0 ]] && PARTS+=("${MODIFIED} modified")
@@ -136,7 +183,11 @@ print-repo() {
     fi
     git for-each-ref refs/heads --format="%(refname:short) %(upstream:short)" | while read -r BRANCH UPSTREAM ; do
         ACTIVE=$([[ "${BRANCH}" == "${CURRENT}" ]] && echo 1 || echo 0)
-        print-branch "${BRANCH}" "${UPSTREAM}" "${ACTIVE}"
+        WORKTREE=$(printf '%s\n' "${WORKTREES}" | awk -F '\t' -v branch="${BRANCH}" '$1 == "branch" && $2 == branch { print $3; exit }')
+        print-branch "${BRANCH}" "${UPSTREAM}" "${ACTIVE}" "${WORKTREE}"
+    done
+    printf '%s\n' "${WORKTREES}" | while IFS=$'\t' read -r TYPE HEAD WORKTREE ; do
+        [[ "${TYPE}" == "detached" ]] && print-worktree-detached "${HEAD}" "${WORKTREE}"
     done
     git stash list --format="%gd %gs" | while read -r STASH LOG ; do
         print-stash "${STASH}" "${LOG#*: }"

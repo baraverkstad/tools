@@ -1,6 +1,12 @@
 # Changelog
 
 
+## Unreleased
+
+### Changed
+- `git-uptodate` displays linked worktrees.
+
+
 ## v1.0 - 2026-05-07
 
 ### Added
