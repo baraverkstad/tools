@@ -18,7 +18,6 @@ set -o pipefail
 # Global variables
 PROGRAM=$0
 TITLES=false
-[[ -t 1 && -t 2 ]] && COLOR=true || COLOR=false
 
 # Color variables (updated by auto-detect later)
 COLOR_ERR=""
@@ -45,12 +44,22 @@ usage() {
     exit 1
 }
 
-# Initialize colors (if enabled)
+# Initialize (or clear) color variables
 init-colors() {
-    export TERM=xterm-256color
-    COLOR_ERR=$(tput setaf 1; tput bold 2>/dev/null || echo '')
-    COLOR_WARN=$(tput setaf 3 2>/dev/null || echo '')
-    COLOR_OFF=$(tput sgr0 2>/dev/null || echo '')
+    local STATE=${1:-}
+    if [[ -z "${STATE}" ]]; then
+        [[ -n "${CLICOLOR_FORCE:-}" || -t 1 ]] && STATE=on || STATE=off
+        [[ -n "${NO_COLOR:-}" ]] && STATE=off
+    fi
+    if [[ "${STATE}" == "on" ]]; then
+        COLOR_ERR=$(export TERM=xterm-256color; tput setaf 1; tput bold 2>/dev/null || echo '')
+        COLOR_WARN=$(export TERM=xterm-256color; tput setaf 3 2>/dev/null || echo '')
+        COLOR_OFF=$(export TERM=xterm-256color; tput sgr0 2>/dev/null || echo '')
+    else
+        COLOR_ERR=""
+        COLOR_WARN=""
+        COLOR_OFF=""
+    fi
 }
 
 # Extract and print front-matter, return non-zero if not found
@@ -85,7 +94,7 @@ while [[ ${1:-} == -* ]]; do
 done
 
 # Main processing
-${COLOR} && init-colors || true
+init-colors
 if [[ $# -eq 0 ]] ; then
     usage
 elif [[ $# -eq 1 && -f "$1" ]] ; then
