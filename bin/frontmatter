@@ -6,6 +6,7 @@
 #
 # Arguments:
 #   -h, --help     - Show usage information
+#   --summary      - Compact table output (best for directories)
 #   --titles       - Extract title from first heading if missing
 #   <file|dir>...  - The files or directories to process
 
@@ -17,6 +18,7 @@ set -o pipefail
 
 # Global variables
 PROGRAM=$0
+SUMMARY=false
 TITLES=false
 
 # Color variables (updated by auto-detect later)
@@ -62,6 +64,13 @@ init-colors() {
     fi
 }
 
+# Find files and filter those with front-matter
+find-files() {
+    find "$1" -type f 2>/dev/null | while read -r f ; do
+        head -n 1 "$f" 2>/dev/null | grep -aq '^---$' && echo "$f"
+    done
+}
+
 # Extract and print front-matter, return non-zero if not found
 print-frontmatter() {
     [[ -r "$1" ]] || die "cannot read file: $1"
@@ -72,21 +81,69 @@ n == 3 && /^#/ && heading == "" { heading = $0; gsub(/^#+[ \t]+/, "", heading) }
 END {
     if (n < 2) exit 1
     if (has_title) exit
-    if (titles && heading) print "title: " heading
+    if (titles == "true" && heading) print "title: " heading
 }' "$1"
 }
 
-# Find files and filter those with front-matter
-find-files() {
-    find "$1" -type f 2>/dev/null | while read -r f ; do
-        head -n 1 "$f" 2>/dev/null | grep -aq '^---$' && echo "$f"
+# Loop over args and print front-matter with file markers
+print-recursive() {
+    local arg found
+    for arg in "$@"; do
+        if [[ -d "$arg" ]]; then
+            found=false
+            while IFS= read -r f; do
+                echo "==> $f <=="
+                print-frontmatter "$f"
+                echo
+                found=true
+            done < <(find-files "$arg")
+            $found || warn "no front-matter files found in: $arg"
+        elif [[ -f "$arg" ]]; then
+            echo "==> $arg <=="
+            print-frontmatter "$arg" || warn "no front-matter found in: $arg"
+            echo
+        else
+            warn "not a file or directory: $arg"
+        fi
     done
+}
+
+# Reshape marked output into an aligned table
+print-summary() {
+    awk '
+/^==> / {
+    if (file != "") store()
+    nfiles++; file = $2; files[nfiles] = file; delete vals; next
+}
+{
+    idx = index($0, ": ")
+    if (idx && !/^[ \t]/) {
+        key = substr($0, 1, idx - 1)
+        val = substr($0, idx + 2)
+        if (!seen[key]) { seen[key] = 1; cols[++ncols] = key }
+        vals[key] = val
+    }
+}
+END {
+    if (file != "") store()
+    printf "file"; for (i = 1; i <= ncols; i++) printf "|%s", cols[i]; printf "\n"
+    for (f = 1; f <= nfiles; f++) {
+        printf "%s", files[f]
+        for (i = 1; i <= ncols; i++) printf "|%s", data[f, cols[i]] ? data[f, cols[i]] : "-"
+        printf "\n"
+    }
+}
+function store() {
+    for (i = 1; i <= ncols; i++)
+        data[nfiles, cols[i]] = vals[cols[i]] ? vals[cols[i]] : "-"
+}' | column -t -s '|'
 }
 
 # Parse options (before positional args)
 while [[ ${1:-} == -* ]]; do
     case "$1" in
         -h|--help) usage ;;
+        --summary) SUMMARY=true ;;
         --titles) TITLES=true ;;
         *) die "unknown option: $1" ;;
     esac
@@ -97,25 +154,10 @@ done
 init-colors
 if [[ $# -eq 0 ]] ; then
     usage
-elif [[ $# -eq 1 && -f "$1" ]] ; then
+elif [[ $# -eq 1 && -f "$1" ]] && ! $SUMMARY; then
     print-frontmatter "$1" || warn "no front-matter found in: $1"
+elif $SUMMARY; then
+    print-recursive "$@" | print-summary
 else
-    for arg in "$@" ; do
-        if [[ -d "$arg" ]] ; then
-            found=false
-            while IFS= read -r f ; do
-                echo "==> $f <=="
-                print-frontmatter "$f"
-                echo
-                found=true
-            done < <(find-files "$arg")
-            $found || warn "no front-matter files found in: $arg"
-        elif [[ -f "$arg" ]] ; then
-            echo "==> $arg <=="
-            print-frontmatter "$arg" || warn "no front-matter found in: $arg"
-            echo
-        else
-            warn "not a file or directory: $arg"
-        fi
-    done
+    print-recursive "$@"
 fi

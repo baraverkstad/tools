@@ -56,11 +56,49 @@ export MANPATH="$HOME/.local/share/man:$MANPATH"
 
 ## frontmatter
 
-Prints the YAML front-matter block from one or more files.
+Prints the YAML front-matter block from one or more files
+or directories.
 
 ```bash
-frontmatter <file|dir>...
+frontmatter [options] <file|dir>...
 ```
+
+### Options
+
+| Flag | Description |
+|---|---|
+| `-h` | Show usage information |
+| `--summary` | Compact table output |
+| `--titles` | Infer title from first heading if missing |
+
+### Example output
+
+Single file:
+
+<pre>
+$ frontmatter post.md
+title: My Post
+date: 2026-05-31
+</pre>
+
+Directory with `--titles`:
+
+<pre>
+$ frontmatter --titles src/
+==> src/index.md <==
+drafted: 2026-05-31
+status: active
+title: My Notes
+</pre>
+
+Directory with `--summary --titles`:
+
+<pre>
+$ frontmatter --summary --titles src/
+file           drafted     status    title
+index.md       2026-05-31  active    My Notes
+outliner.md    2026-04-19  active    Outliner
+</pre>
 
 ### Install via Homebrew
 

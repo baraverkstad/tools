@@ -15,8 +15,21 @@ searched recursively for files whose first line is
 .BR \-\-\- .
 .SH OPTIONS
 .TP
-.B -h, --help
+.B \-h, \-\-help
 Show usage information and exit.
+.TP
+.B \-\-summary
+Format output as an aligned table. Columns are determined
+dynamically from the fields present. Combine with
+.B \-\-titles
+to include the inferred title column.
+.TP
+.B \-\-titles
+Infer a
+.B title:
+field from the first
+.B #
+heading when none is present in the front-matter.
 .TP
 .I file
 Print the front-matter block from the given file, or warn if none
@@ -38,3 +51,9 @@ Print front-matter from a single file.
 .B frontmatter src/
 Recursively print front-matter from all files under
 .IR src/ .
+.TP
+.B frontmatter \-\-titles src/
+Include inferred titles from first headings.
+.TP
+.B frontmatter \-\-summary \-\-titles src/
+Show a compact table with titles and other front-matter fields.
