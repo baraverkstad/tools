@@ -6,9 +6,18 @@
 #
 # Arguments:
 #   -h, --help     - Show usage information
+#   --titles       - Extract title from first heading if missing
 #   <file|dir>...  - The files or directories to process
 
+# Set caution flags
+set -o nounset
+set -o errtrace
+set -o errexit
+set -o pipefail
+
+# Global variables
 PROGRAM=$0
+TITLES=false
 [[ -t 1 && -t 2 ]] && COLOR=true || COLOR=false
 
 # Color variables (updated by auto-detect later)
@@ -47,7 +56,15 @@ init-colors() {
 # Extract and print front-matter, return non-zero if not found
 print-frontmatter() {
     [[ -r "$1" ]] || die "cannot read file: $1"
-    awk '/^---$/ { n++; if (n == 1) next; if (n == 2) exit } n == 1 { print } END { exit (n == 0) }' "$1"
+    awk -v titles=$TITLES '
+/^---$/       { n++; if (n == 1) next; if (n == 2) { n = 3; next } }
+n == 1        { print; if (/^title:[ \t]/) has_title = 1; next }
+n == 3 && /^#/ && heading == "" { heading = $0; gsub(/^#+[ \t]+/, "", heading) }
+END {
+    if (n < 2) exit 1
+    if (has_title) exit
+    if (titles && heading) print "title: " heading
+}' "$1"
 }
 
 # Find files and filter those with front-matter
@@ -57,9 +74,19 @@ find-files() {
     done
 }
 
+# Parse options (before positional args)
+while [[ ${1:-} == -* ]]; do
+    case "$1" in
+        -h|--help) usage ;;
+        --titles) TITLES=true ;;
+        *) die "unknown option: $1" ;;
+    esac
+    shift
+done
+
 # Main processing
 ${COLOR} && init-colors || true
-if [[ $# -eq 0 || "$1" == "-h" || "$1" == "--help" ]] ; then
+if [[ $# -eq 0 ]] ; then
     usage
 elif [[ $# -eq 1 && -f "$1" ]] ; then
     print-frontmatter "$1" || warn "no front-matter found in: $1"
