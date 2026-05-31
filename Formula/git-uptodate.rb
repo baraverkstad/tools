@@ -1,8 +1,8 @@
 class GitUptodate < Formula
   desc "Print branch, stash, and working tree status for one or more repositories"
   homepage "https://github.com/baraverkstad/tools"
-  url "https://github.com/baraverkstad/tools/archive/refs/tags/v1.1.tar.gz"
-  sha256 "53143c0b1f0bbcfe167ff67922bc9706e55ac1d422b27d4db4b258e10f4703b2"
+  url "https://github.com/baraverkstad/tools/archive/refs/tags/v1.2.tar.gz"
+  sha256 "9acd0c0558ecaf1521de551dc0eda90e6632d75949c7ba2337b226b41f5e6000"
   license "MIT"
 
   def install
