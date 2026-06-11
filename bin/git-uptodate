@@ -97,15 +97,23 @@ print-branch() {
         "${BRANCH}" \
         "${COLOR_OFF}"
     if [[ -n "${UPSTREAM}" ]] ; then
-        AHEAD=$(git rev-list --count "${UPSTREAM}..${BRANCH}")
-        BEHIND=$(git rev-list --count "${BRANCH}..${UPSTREAM}")
-        printf '%s --> %-38.38s %s[%s ahead, %s behind]%s' \
-            "${COLOR_GREY}" \
-            "${UPSTREAM}" \
-            "$([[ $((AHEAD + BEHIND)) -gt 0 ]] && echo -n "${COLOR_ERR}" || echo -n "${COLOR_GREY}")" \
-            "${AHEAD}" \
-            "${BEHIND}" \
-            "${COLOR_OFF}"
+        if git rev-parse --verify --quiet "${UPSTREAM}^{commit}" >/dev/null ; then
+            AHEAD=$(git rev-list --count "${UPSTREAM}..${BRANCH}")
+            BEHIND=$(git rev-list --count "${BRANCH}..${UPSTREAM}")
+            printf '%s --> %-38.38s %s[%s ahead, %s behind]%s' \
+                "${COLOR_GREY}" \
+                "${UPSTREAM}" \
+                "$([[ $((AHEAD + BEHIND)) -gt 0 ]] && echo -n "${COLOR_ERR}" || echo -n "${COLOR_GREY}")" \
+                "${AHEAD}" \
+                "${BEHIND}" \
+                "${COLOR_OFF}"
+        else
+            printf '%s --> %-38.38s %s[missing upstream]%s' \
+                "${COLOR_GREY}" \
+                "${UPSTREAM}" \
+                "${COLOR_WARN}" \
+                "${COLOR_OFF}"
+        fi
     elif [[ -n "${WORKTREE}" ]] ; then
         printf '%s @ %-55.55s%s' "${COLOR_GREY}" "${WORKTREE}" "${COLOR_OFF}"
     fi
@@ -181,7 +189,7 @@ print-repo() {
     if [[ -z "$CURRENT" ]] ; then
         print-detached
     fi
-    git for-each-ref refs/heads --format="%(refname:short) %(upstream:short)" | while read -r BRANCH UPSTREAM ; do
+    git for-each-ref refs/heads --format="%(refname:short)%09%(upstream:short)" | while IFS=$'\t' read -r BRANCH UPSTREAM ; do
         ACTIVE=$([[ "${BRANCH}" == "${CURRENT}" ]] && echo 1 || echo 0)
         WORKTREE=$(printf '%s\n' "${WORKTREES}" | awk -F '\t' -v branch="${BRANCH}" '$1 == "branch" && $2 == branch { print $3; exit }')
         print-branch "${BRANCH}" "${UPSTREAM}" "${ACTIVE}" "${WORKTREE}"

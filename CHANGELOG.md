@@ -1,6 +1,12 @@
 # Changelog
 
 
+## Unreleased
+
+- Fixed `git-uptodate` errors for branches with missing upstream refs
+- [Changes](https://github.com/baraverkstad/tools/compare/v1.2...HEAD)
+
+
 ## v1.2 - 2026-05-31
 
 - Added `--summary` output mode in `frontmatter`
