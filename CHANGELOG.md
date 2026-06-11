@@ -1,10 +1,10 @@
 # Changelog
 
 
-## Unreleased
+## v1.3 - 2026-06-11
 
 - Fixed `git-uptodate` errors for branches with missing upstream refs
-- [Changes](https://github.com/baraverkstad/tools/compare/v1.2...HEAD)
+- [Changes](https://github.com/baraverkstad/tools/compare/v1.2...v1.3)
 
 
 ## v1.2 - 2026-05-31
